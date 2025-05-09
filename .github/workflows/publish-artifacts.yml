@@ -1,7 +1,7 @@
 name: Publish artifacts with ORAS
 
 on:
-  push:
+  pull_request_target:
     branches:
     - main
 
@@ -18,15 +18,16 @@ jobs:
     strategy:
       matrix:
         platform: [
-          { tee: none,        arch: x86_64,  libc: musl },
-          { tee: none,        arch: s390x,   libc: gnu  },
-          { tee: none,        arch: aarch64, libc: gnu  },
-          { tee: amd,         arch: x86_64,  libc: musl },
-          { tee: az-cvm-vtpm, arch: x86_64,  libc: gnu  },
-          { tee: tdx,         arch: x86_64,  libc: gnu  },
-          { tee: cca,         arch: x86_64,  libc: musl },
-          { tee: cca,         arch: aarch64, libc: gnu  },
-          { tee: se,          arch: s390x,   libc: gnu  },
+          { tee: none,        arch: powerpc64le,  libc: gnu },
+          # { tee: none,        arch: x86_64,  libc: musl },
+          # { tee: none,        arch: s390x,   libc: gnu  },
+          # { tee: none,        arch: aarch64, libc: gnu  },
+          # { tee: amd,         arch: x86_64,  libc: musl },
+          # { tee: az-cvm-vtpm, arch: x86_64,  libc: gnu  },
+          # { tee: tdx,         arch: x86_64,  libc: gnu  },
+          # { tee: cca,         arch: x86_64,  libc: musl },
+          # { tee: cca,         arch: aarch64, libc: gnu  },
+          # { tee: se,          arch: s390x,   libc: gnu  },
         ]
     runs-on: ${{ matrix.platform.arch == 's390x' && 's390x' || 'ubuntu-24.04' }}
     env:
@@ -110,12 +111,15 @@ jobs:
         - x86_64
         - s390x
         - aarch64
+        - ppc64le
         include:
         - arch: x86_64
           libc: musl
         - arch: s390x
           libc: gnu
         - arch: aarch64
+          libc: gnu
+        - arch: ppc64le
           libc: gnu
     runs-on: ${{ matrix.arch == 's390x' && 's390x' || 'ubuntu-24.04' }}
     env:
