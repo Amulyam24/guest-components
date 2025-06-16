@@ -4,6 +4,7 @@ on:
   pull_request_target:
     branches:
     - main
+    - test
 
 env:
   RUST_TOOLCHAIN: 1.80.0
