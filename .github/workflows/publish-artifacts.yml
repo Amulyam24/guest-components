@@ -66,7 +66,7 @@ jobs:
 
     - uses: actions/checkout@v4
 
-    - name: Build
+    - name: Build AA
       env:
         ARCH: ${{ matrix.platform.arch }}
       run: make ./target/${{ env.RUST_TARGET }}/release/attestation-agent
