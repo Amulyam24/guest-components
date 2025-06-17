@@ -156,10 +156,10 @@ jobs:
 
     - uses: actions/checkout@v4
 
-    - name: Build CDH
-      env:
-        ARCH: ${{ matrix.arch }}
-      run: make ./target/${{ env.RUST_TARGET }}/release/confidential-data-hub
+    #- name: Build CDH
+    #  env:
+    #    ARCH: ${{ matrix.arch }}
+    #  run: make ./target/${{ env.RUST_TARGET }}/release/confidential-data-hub
 
     - name: Build ASR
       env:
