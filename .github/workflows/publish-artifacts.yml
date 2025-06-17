@@ -112,7 +112,7 @@ jobs:
         - x86_64
         - s390x
         - aarch64
-        - ppc64le
+        - powerpc64le
         include:
         - arch: x86_64
           libc: musl
@@ -120,7 +120,7 @@ jobs:
           libc: gnu
         - arch: aarch64
           libc: gnu
-        - arch: ppc64le
+        - arch: powerpc64le
           libc: gnu
     runs-on: ${{ matrix.arch == 's390x' && 's390x' || 'ubuntu-24.04' }}
     env:
