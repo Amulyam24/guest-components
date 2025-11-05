@@ -4,22 +4,16 @@
 //
 
 use anyhow::*;
-use attestation::attestation_agent_service_server::{
-    AttestationAgentService, AttestationAgentServiceServer,
-};
-use attestation::{
-    BindInitDataRequest, BindInitDataResponse, ExtendRuntimeMeasurementRequest,
-    ExtendRuntimeMeasurementResponse, GetEvidenceRequest, GetEvidenceResponse, GetTeeTypeRequest,
-    GetTeeTypeResponse, GetTokenRequest, GetTokenResponse,
-};
 use attestation_agent::{AttestationAPIs, AttestationAgent};
 use log::{debug, error};
+use protos::grpc::aa::attestation_agent::{
+    attestation_agent_service_server::{AttestationAgentService, AttestationAgentServiceServer},
+    BindInitDataRequest, BindInitDataResponse, ExtendRuntimeMeasurementRequest,
+    ExtendRuntimeMeasurementResponse, GetAdditionalEvidenceRequest, GetEvidenceRequest,
+    GetEvidenceResponse, GetTeeTypeRequest, GetTeeTypeResponse, GetTokenRequest, GetTokenResponse,
+};
 use std::net::SocketAddr;
 use tonic::{transport::Server, Request, Response, Status};
-
-mod attestation {
-    tonic::include_proto!("attestation_agent");
-}
 
 pub const AGENT_NAME: &str = "attestation-agent";
 
@@ -68,6 +62,32 @@ impl AttestationAgentService for AA {
             .map_err(|e| {
                 error!("AA (grpc): get evidence failed:\n{e:?}");
                 Status::internal(format!("[ERROR:{AGENT_NAME}] AA get evidence failed"))
+            })?;
+
+        debug!("AA (grpc): Get evidence successfully!");
+
+        let reply = GetEvidenceResponse { evidence };
+
+        Result::Ok(Response::new(reply))
+    }
+
+    async fn get_additional_evidence(
+        &self,
+        request: Request<GetAdditionalEvidenceRequest>,
+    ) -> Result<Response<GetEvidenceResponse>, Status> {
+        let request = request.into_inner();
+
+        debug!("AA (grpc): get additional evidence ...");
+
+        let evidence = self
+            .inner
+            .get_additional_evidence(&request.runtime_data)
+            .await
+            .map_err(|e| {
+                error!("AA (grpc): get additional evidence failed:\n{e:?}");
+                Status::internal(format!(
+                    "[ERROR:{AGENT_NAME}] AA get additional evidence failed"
+                ))
             })?;
 
         debug!("AA (grpc): Get evidence successfully!");

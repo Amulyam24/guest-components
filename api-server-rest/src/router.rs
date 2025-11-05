@@ -22,6 +22,13 @@ pub trait ApiHandler: Send {
         Ok(Response::new(Body::empty()))
     }
 
+    // Build an empty response with 200 status code.
+    fn empty_response(&self) -> Result<Response<Body>> {
+        Ok(Response::builder()
+            .status(StatusCode::OK)
+            .body(Body::empty())?)
+    }
+
     // Build octet-stream response for bytes data.
     fn octet_stream_response(&self, data: Vec<u8>) -> Result<Response<Body>> {
         Ok(Response::builder()
@@ -96,7 +103,7 @@ impl Router {
         req: Request<Body>,
     ) -> Result<Response<Body>> {
         if let Some((root_path, url_path)) = split_nth_slash(req.uri().path(), 2) {
-            println!("root_path {}, url_path {}", root_path, url_path);
+            println!("root_path {root_path}, url_path {url_path}");
             let local_url = url_path.to_string();
             match self.routes.get(root_path) {
                 Some(handler) => return handler.handle_request(remote_addr, &local_url, req).await,

@@ -3,37 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-#[cfg(feature = "ttrpc")]
-use ttrpc_codegen::{Codegen, Customize, ProtobufCustomize};
-
 fn main() -> std::io::Result<()> {
-    #[cfg(feature = "grpc")]
-    {
-        tonic_build::configure()
-            .build_server(true)
-            .protoc_arg("--experimental_allow_proto3_optional")
-            .compile_protos(&["../protos/attestation-agent.proto"], &["../protos"])?;
-    }
-
-    #[cfg(feature = "ttrpc")]
-    {
-        let protos = vec!["../protos/attestation-agent.proto"];
-        let protobuf_customized = ProtobufCustomize::default().gen_mod_rs(false);
-
-        Codegen::new()
-            .out_dir("src/bin/ttrpc_dep/ttrpc_protocol")
-            .inputs(&protos)
-            .include("../protos")
-            .rust_protobuf()
-            .customize(Customize {
-                async_all: true,
-                ..Default::default()
-            })
-            .rust_protobuf_customize(protobuf_customized)
-            .run()
-            .expect("Generate ttrpc protocol code failed.");
-    }
-
     #[cfg(feature = "bin")]
     {
         use std::env;
@@ -46,7 +16,7 @@ fn main() -> std::io::Result<()> {
         fn feature_list(features: Vec<&str>) -> String {
             let enabled_features: Vec<&str> = features
                 .into_iter()
-                .filter(|&feature| env::var(format!("CARGO_FEATURE_{}", feature)).is_ok())
+                .filter(|&feature| env::var(format!("CARGO_FEATURE_{feature}")).is_ok())
                 .collect();
 
             enabled_features.join(", ")
@@ -87,9 +57,9 @@ fn main() -> std::io::Result<()> {
 
         writeln!(f, "\n\nCommit Hash: {git_commit_hash} {git_status_output}",).unwrap();
 
-        writeln!(f, "Supported Attesters: {}", attester).unwrap();
+        writeln!(f, "Supported Attesters: {attester}").unwrap();
 
-        writeln!(f, "Token plugins: {}", token_plugins).unwrap();
+        writeln!(f, "Token plugins: {token_plugins}").unwrap();
     }
 
     Ok(())

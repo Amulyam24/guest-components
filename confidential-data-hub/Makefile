@@ -20,13 +20,18 @@ SOURCE_ARCH := $(shell uname -m)
 RPC ?= ttrpc
 ARCH ?= $(shell uname -m)
 DEBUG ?=
+
+ifeq ($(SOURCE_ARCH), ppc64le)
+  ARCH=powerpc64le
+endif
+
 ifeq ($(ARCH), $(filter $(ARCH), s390x powerpc64le))
     LIBC ?= gnu
 else
     LIBC ?= musl
 endif
 RESOURCE_PROVIDER ?= kbs,sev
-KMS_PROVIDER ?= aliyun,ehsm
+KMS_PROVIDER ?= aliyun
 DESTDIR ?= $(PREFIX)/bin
 RUSTFLAGS_ARGS ?=
 features ?=
@@ -45,10 +50,6 @@ else
     binary = --bin grpc-cdh
     features += bin,grpc
     binary_name = grpc-cdh
-endif
-
-ifeq ($(SOURCE_ARCH), ppc64le)
-  ARCH=powerpc64le
 endif
 
 ifneq ($(RESOURCE_PROVIDER), none)
@@ -82,12 +83,6 @@ ifneq ($(SOURCE_ARCH), $(ARCH))
         RUSTFLAGS_ARGS += -C linker=$(GCC_COMPILER_FOR_TARGET_ARCH)
     else
         $(error ERROR: Cross-compiling is only tested on Debian-like OSes)
-    endif
-endif
-
-ifeq ($(SOURCE_ARCH), $(filter $(SOURCE_ARCH), s390x ppc64le))
-    ifeq ($(DEBIANOS), true)
-        PROTOC_BINARY_INSTALL := $(shell sudo apt-get install -y protobuf-compiler)  
     endif
 endif
 

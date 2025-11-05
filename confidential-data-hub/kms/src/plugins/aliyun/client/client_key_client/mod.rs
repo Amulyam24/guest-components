@@ -10,6 +10,7 @@ use base64::{engine::general_purpose::STANDARD, Engine};
 use chrono::Utc;
 use log::{error, info};
 use prost::Message;
+use protos::grpc::cdh::dkms_api;
 use reqwest::{header::HeaderMap, Certificate, ClientBuilder};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -26,10 +27,6 @@ use super::super::annotations::*;
 use super::ALIYUN_IN_GUEST_DEFAULT_KEY_PATH;
 use config::*;
 use credential::*;
-
-pub mod dkms_api {
-    tonic::include_proto!("dkms_api");
-}
 
 /// Serialized [`crate::ProviderSettings`]
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -88,7 +85,7 @@ impl ClientKeyClient {
     pub async fn from_provider_settings(provider_settings: &ProviderSettings) -> Result<Self> {
         let key_path = env::var("ALIYUN_IN_GUEST_KEY_PATH")
             .unwrap_or(ALIYUN_IN_GUEST_DEFAULT_KEY_PATH.to_owned());
-        info!("ALIYUN_IN_GUEST_KEY_PATH = {}", key_path);
+        info!("ALIYUN_IN_GUEST_KEY_PATH = {key_path}");
 
         let provider_settings: AliClientKeyProviderSettings =
             serde_json::from_value(Value::Object(provider_settings.clone())).map_err(|e| {
@@ -337,10 +334,7 @@ impl ClientKeyClient {
             canonicalized_headers
         );
         let string_signed = self.credential.sign(&string_to_sign)?;
-        headers.insert(
-            "Authorization",
-            format!("Bearer {}", string_signed).parse()?,
-        );
+        headers.insert("Authorization", format!("Bearer {string_signed}").parse()?);
 
         Ok(headers)
     }

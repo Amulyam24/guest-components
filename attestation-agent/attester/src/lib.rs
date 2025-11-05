@@ -4,9 +4,10 @@
 //
 
 use anyhow::*;
-use kbs_types::Tee;
+use kbs_types::{HashAlgorithm, Tee};
 
 pub mod sample;
+pub mod sample_device;
 pub mod utils;
 
 #[cfg(feature = "az-snp-vtpm-attester")]
@@ -30,11 +31,20 @@ pub mod snp;
 #[cfg(feature = "csv-attester")]
 pub mod csv;
 
+#[cfg(feature = "hygon-dcu-attester")]
+pub mod hygon_dcu;
+
 #[cfg(feature = "tsm-report")]
 pub mod tsm_report;
 
 #[cfg(feature = "se-attester")]
 pub mod se;
+
+#[cfg(feature = "tpm-attester")]
+pub mod tpm;
+
+#[cfg(feature = "nvidia-attester")]
+pub mod nvidia;
 
 pub type BoxedAttester = Box<dyn Attester + Send + Sync>;
 
@@ -44,6 +54,7 @@ impl TryFrom<Tee> for BoxedAttester {
     fn try_from(value: Tee) -> Result<Self> {
         let attester: Box<dyn Attester + Send + Sync> = match value {
             Tee::Sample => Box::<sample::SampleAttester>::default(),
+            Tee::SampleDevice => Box::<sample_device::SampleDeviceAttester>::default(),
             #[cfg(feature = "tdx-attester")]
             Tee::Tdx => Box::<tdx::TdxAttester>::default(),
             #[cfg(feature = "sgx-attester")]
@@ -58,8 +69,14 @@ impl TryFrom<Tee> for BoxedAttester {
             Tee::Snp => Box::<snp::SnpAttester>::default(),
             #[cfg(feature = "csv-attester")]
             Tee::Csv => Box::<csv::CsvAttester>::default(),
+            #[cfg(feature = "hygon-dcu-attester")]
+            Tee::HygonDcu => Box::<hygon_dcu::DcuAttester>::default(),
             #[cfg(feature = "se-attester")]
             Tee::Se => Box::<se::SeAttester>::default(),
+            #[cfg(feature = "tpm-attester")]
+            Tee::Tpm => Box::new(tpm::TpmAttester::new()?),
+            #[cfg(feature = "nvidia-attester")]
+            Tee::Nvidia => Box::<nvidia::NvAttester>::default(),
             _ => bail!("TEE is not supported!"),
         };
 
@@ -72,15 +89,19 @@ pub enum InitDataResult {
     Unsupported,
 }
 
+pub type TeeEvidence = serde_json::Value;
+
 #[async_trait::async_trait]
 pub trait Attester {
     /// Call the hardware driver to get the Hardware specific evidence.
     /// The parameter `report_data` will be used as the user input of the
     /// evidence to avoid reply attack.
-    async fn get_evidence(&self, report_data: Vec<u8>) -> Result<String>;
+    async fn get_evidence(&self, report_data: Vec<u8>) -> Result<TeeEvidence>;
 
     /// Extend TEE specific dynamic measurement register
     /// to enable dynamic measurement capabilities for input data at runtime.
+    /// The input event_digest would be truncated or padded to the size of
+    /// the register.
     async fn extend_runtime_measurement(
         &self,
         _event_digest: Vec<u8>,
@@ -98,6 +119,24 @@ pub trait Attester {
     /// relationship between PCR and platform RTMR.
     async fn get_runtime_measurement(&self, _pcr_index: u64) -> Result<Vec<u8>> {
         bail!("Unimplemented")
+    }
+
+    /// This function is used to get the CC measurement register value of
+    /// the given PCR register index. Different platforms have different mapping
+    /// relationship between PCR and platform RTMR.
+    ///
+    /// Reference https://uefi.org/specs/UEFI/2.11/38_Confidential_Computing.html#vendor-specific-information
+    fn pcr_to_ccmr(&self, _pcr_index: u64) -> u64 {
+        panic!("Unimplemented")
+    }
+
+    /// Returns the hash algorithm used by the Confidential Computing Event Log (CCEL).
+    /// The algorithm is defined by the platform.  
+    ///
+    /// If the platform does not support runtime measurement or the algorithm cannot
+    /// be determined, this function will panic.
+    fn ccel_hash_algorithm(&self) -> HashAlgorithm {
+        panic!("Unimplemented")
     }
 }
 
@@ -143,6 +182,11 @@ pub fn detect_tee_type() -> Tee {
         return Tee::Se;
     }
 
+    #[cfg(feature = "tpm-attester")]
+    if tpm::detect_platform() {
+        return Tee::Tpm;
+    }
+
     log::warn!(
         "No TEE platform detected. Sample Attester will be used.
          If you are expecting to collect evidence from inside a confidential guest,
@@ -156,4 +200,26 @@ pub fn detect_tee_type() -> Tee {
          Attestation will continue using the fallback sample attester."
     );
     Tee::Sample
+}
+
+/// Get any additional TEEs that might be connected to the guest,
+/// such as a confidential device.
+pub fn detect_attestable_devices() -> Vec<Tee> {
+    let mut additional_devices = vec![];
+
+    #[cfg(feature = "nvidia-attester")]
+    if nvidia::detect_platform() {
+        additional_devices.push(Tee::Nvidia);
+    }
+
+    if sample_device::detect_platform() {
+        additional_devices.push(Tee::SampleDevice);
+    }
+
+    #[cfg(feature = "hygon-dcu-attester")]
+    if hygon_dcu::detect_platform() {
+        additional_devices.push(Tee::HygonDcu);
+    }
+
+    additional_devices
 }

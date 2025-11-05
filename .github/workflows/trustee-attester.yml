@@ -23,9 +23,6 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        rust:
-          - stable
-          - 1.80.0
         instance:
           - ubuntu-24.04
           - s390x
@@ -37,27 +34,22 @@ jobs:
             cargo_test_opts: "-p kbs_protocol --bin trustee-attester --no-default-features --features background_check,passport,openssl,se-attester,bin"
           - instance: ubuntu-24.04-arm
             cargo_test_opts: "-p kbs_protocol --bin trustee-attester --no-default-features --features background_check,passport,openssl,cca-attester,bin"
-        exclude:
-          - instance: ubuntu-24.04-arm
-            rust: stable
     runs-on: ${{ matrix.instance }}
     steps:
+      - name: Harden the runner (Audit all outbound calls)
+        uses: step-security/harden-runner@f4a75cfd619ee5ce8d5b864b0d183aff3c69b55a # v2.13.1
+        with:
+          egress-policy: audit
+
       - name: Code checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
         with:
           fetch-depth: 1
 
-      - name: Install Rust toolchain (${{ matrix.rust }})
-        uses: actions-rs/toolchain@v1
+      - name: Install Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@1780873c7b576612439a134613cc4cc74ce5538c # v1.15.2
         with:
-          profile: minimal
-          toolchain: ${{ matrix.rust }}
-          override: true
           components: rustfmt, clippy
-
-      - name: Install protoc
-        run: |
-          sudo apt-get update && sudo apt-get install -y protobuf-compiler
 
       - name: Install TPM dependencies
         run: |
@@ -71,25 +63,13 @@ jobs:
           sudo apt-get install -y libdevmapper-dev
 
       - name: Run cargo build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: ${{ matrix.cargo_test_opts }}
+        run: cargo build ${{ matrix.cargo_test_opts }}
 
       - name: Run cargo test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: ${{ matrix.cargo_test_opts }}
+        run: cargo test ${{ matrix.cargo_test_opts }}
 
       - name: Run cargo fmt check
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+        run: cargo fmt --all -- --check
 
       - name: Run rust clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: ${{ matrix.cargo_test_opts }}
+        run: cargo clippy ${{ matrix.cargo_test_opts }}

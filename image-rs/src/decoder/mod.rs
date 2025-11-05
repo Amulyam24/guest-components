@@ -59,7 +59,7 @@ impl Compression {
     /// Create an `AsyncRead` to decode input stream.
     pub fn async_decompress<'a>(
         &self,
-        input: (impl AsyncRead + Unpin + 'a + Send),
+        input: impl AsyncRead + Unpin + 'a + Send,
     ) -> Box<dyn AsyncRead + Unpin + 'a + Send> {
         match self {
             Self::Gzip => {
@@ -76,12 +76,12 @@ impl Compression {
     }
 
     /// Create an `AsyncRead` to decode input gzip stream.
-    pub fn async_gzip_decompress(input: (impl AsyncRead + Unpin)) -> impl AsyncRead + Unpin {
+    pub fn async_gzip_decompress(input: impl AsyncRead + Unpin) -> impl AsyncRead + Unpin {
         async_compression::tokio::bufread::GzipDecoder::new(BufReader::new(input))
     }
 
     /// Create an `AsyncRead` to decode input zstd stream.
-    pub fn async_zstd_decompress(input: (impl AsyncRead + Unpin)) -> impl AsyncRead + Unpin {
+    pub fn async_zstd_decompress(input: impl AsyncRead + Unpin) -> impl AsyncRead + Unpin {
         async_compression::tokio::bufread::ZstdDecoder::new(BufReader::new(input))
     }
 }
@@ -300,11 +300,11 @@ mod tests {
         ];
 
         for (i, d) in tests.iter().enumerate() {
-            let msg = format!("test[{}]: {:?}", i, d);
+            let msg = format!("test[{i}]: {d:?}");
 
             let result = Compression::try_from(d.media_type_str);
 
-            let msg = format!("{}: result: {:?}", msg, result);
+            let msg = format!("{msg}: result: {result:?}");
 
             assert_result!(d.result, result, msg);
         }

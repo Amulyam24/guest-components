@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-use attester::*;
+use attester::{detect_attestable_devices, detect_tee_type, BoxedAttester};
 use clap::Parser;
 use std::io::Read;
 use tokio::fs;
@@ -23,15 +23,13 @@ enum Cli {
     File { path: String },
 }
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() {
+    env_logger::init();
     // report_data on all platforms is 64 bytes length.
     let mut report_data = vec![0u8; 64];
 
     let cli = Cli::parse();
-
-    let tee = detect_tee_type();
-    let attester: BoxedAttester = tee.try_into().expect("create attester failed");
 
     match cli {
         Cli::Stdio => std::io::stdin()
@@ -50,9 +48,22 @@ async fn main() {
         }
     }
 
-    let evidence = attester
-        .get_evidence(report_data)
+    let evidence = TryInto::<BoxedAttester>::try_into(detect_tee_type())
+        .expect("Failed to initialize attester.")
+        .get_evidence(report_data.clone())
         .await
         .expect("get evidence failed");
-    println!("{evidence}");
+    println!("{:?}:{evidence}", detect_tee_type());
+
+    for tee in detect_attestable_devices() {
+        let attester =
+            TryInto::<BoxedAttester>::try_into(tee).expect("Failed to initialize device attester");
+
+        let evidence = attester
+            .get_evidence(report_data.clone())
+            .await
+            .expect("get additional evidence failed");
+
+        println!("{tee:?}:{evidence}");
+    }
 }

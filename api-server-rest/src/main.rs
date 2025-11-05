@@ -13,7 +13,6 @@ use std::sync::Arc;
 mod aa;
 mod cdh;
 mod router;
-mod ttrpc_proto;
 mod utils;
 
 use aa::{AAClient, AA_ROOT};
@@ -68,26 +67,26 @@ async fn main() -> Result<()> {
         "resource" => {
             router.register_route(
                 CDH_ROOT,
-                Box::new(CDHClient::new(&args.cdh_addr, vec![Method::GET])?),
+                Box::new(CDHClient::new(&args.cdh_addr, vec![Method::GET]).await?),
             );
         }
 
         "attestation" => {
             router.register_route(
                 AA_ROOT,
-                Box::new(AAClient::new(&args.aa_addr, vec![Method::GET])?),
+                Box::new(AAClient::new(&args.aa_addr, vec![Method::GET, Method::POST]).await?),
             );
         }
 
         "all" => {
             router.register_route(
                 CDH_ROOT,
-                Box::new(CDHClient::new(&args.cdh_addr, vec![Method::GET])?),
+                Box::new(CDHClient::new(&args.cdh_addr, vec![Method::GET]).await?),
             );
 
             router.register_route(
                 AA_ROOT,
-                Box::new(AAClient::new(&args.aa_addr, vec![Method::GET])?),
+                Box::new(AAClient::new(&args.aa_addr, vec![Method::GET, Method::POST]).await?),
             );
         }
 
@@ -116,7 +115,7 @@ async fn main() -> Result<()> {
     println!("API Server listening on http://{}", args.bind);
 
     if let Err(e) = server.await {
-        eprintln!("API server error: {}", e);
+        eprintln!("API server error: {e}");
     }
 
     Ok(())
