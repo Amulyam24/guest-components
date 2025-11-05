@@ -1,4 +1,4 @@
-name: Publish artifacts with ORAS
+name: Publish artifacts with ORAS test
 
 on:
   pull_request_target:
