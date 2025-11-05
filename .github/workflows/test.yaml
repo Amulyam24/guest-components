@@ -30,7 +30,7 @@ jobs:
           # { tee: cca,         arch: aarch64, libc: gnu  },
           # { tee: se,          arch: s390x,   libc: gnu  },
         ]
-    runs-on: ${{ matrix.platform.arch == 's390x' && 's390x' || matrix.platform.arch == 'ppc64le' && 'ppc64le' || 'ubuntu-24.04' }}
+    runs-on: ${{ matrix.platform.arch == 's390x' && 's390x' || matrix.platform.arch == 'powerpc64le' && 'ppc64le' || 'ubuntu-24.04' }}
     env:
       TEE_PLATFORM: ${{ matrix.platform.tee }}
       LIBC: ${{ matrix.platform.libc }}
