@@ -35,7 +35,7 @@ jobs:
       TEE_PLATFORM: ${{ matrix.platform.tee }}
       LIBC: ${{ matrix.platform.libc }}
       REGISTRY: ghcr.io
-      IMAGE_NAME: ${{ github.repository }}
+      IMAGE_NAME: amulyam24/guest-components
       RUST_TARGET: ${{ matrix.platform.arch }}-unknown-linux-${{ matrix.platform.libc }}
     steps:
     - name: Harden the runner (Audit all outbound calls)
