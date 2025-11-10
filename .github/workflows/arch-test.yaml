@@ -18,12 +18,9 @@ jobs:
 
       - name: Print Arch Tag
         run: |
-          # Map matrix.arch using Bash parameter substitution
+          # Map x86_64 -> amd64, powerpc64le -> ppc64le
           arch_tag="${{ matrix.arch/x86_64/amd64 }}"
           arch_tag="${arch_tag/powerpc64le/ppc64le}"
 
-          # Print results
           echo "matrix.arch = ${{ matrix.arch }}"
           echo "arch_tag = $arch_tag"
-
-
