@@ -1,4 +1,4 @@
-name: attestation-agent basic build and unit tests
+name: attestation-agent basic build and unit
 
 on:
   push:
