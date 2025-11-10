@@ -1,4 +1,4 @@
-name: Test Arch Mapping with uname -m
+name: Test Arch Mapping with Matrix
 
 on:
   pull_request:
@@ -8,19 +8,22 @@ on:
 jobs:
   test-arch-tag:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [x86_64, powerpc64le]
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
       - name: Print Arch Tag
         run: |
-          # Get the architecture from the runner
-          arch=$(uname -m)
+          # Map matrix.arch using Bash parameter substitution
+          arch_tag="${{ matrix.arch/x86_64/amd64 }}"
+          arch_tag="${arch_tag/powerpc64le/ppc64le}"
 
-          # Map x86_64 -> amd64
-          arch_tag="${arch/x86_64/amd64}"
-
-          # Print the results
-          echo "uname -m = $arch"
+          # Print results
+          echo "matrix.arch = ${{ matrix.arch }}"
           echo "arch_tag = $arch_tag"
+
 
